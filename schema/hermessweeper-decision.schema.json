@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "closeReason",
+    "confidence",
+    "summary",
+    "evidence",
+    "risks",
+    "fixedRelease",
+    "fixedSha",
+    "closeComment"
+  ],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["close", "keep_open"],
+      "description": "Whether to close or keep open the issue/PR"
+    },
+    "closeReason": {
+      "type": "string",
+      "enum": [
+        "implemented_on_main",
+        "cannot_reproduce",
+        "out_of_scope",
+        "incoherent",
+        "stale_insufficient_info",
+        "none"
+      ],
+      "description": "The reason for closing. Use 'none' when keeping open."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Confidence level in the decision"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief summary of the review findings"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "detail", "file", "line", "command", "sha"],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "file": {
+            "type": ["string", "null"]
+          },
+          "line": {
+            "type": ["integer", "null"]
+          },
+          "command": {
+            "type": ["string", "null"]
+          },
+          "sha": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "description": "Evidence supporting the decision"
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Risks or open questions about the decision"
+    },
+    "fixedRelease": {
+      "type": ["string", "null"],
+      "description": "Release tag/version where the issue was fixed, if known. Use null when not applicable or not known."
+    },
+    "fixedSha": {
+      "type": ["string", "null"],
+      "description": "Specific commit SHA that fixed or proves the issue is implemented, if known. Use null when not applicable or not known."
+    },
+    "closeComment": {
+      "type": "string",
+      "description": "The comment to post when closing the issue/PR. Empty string when keeping open."
+    }
+  }
+}

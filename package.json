@@ -1,0 +1,25 @@
+{
+  "name": "@billy/hermessweeper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-powered GitHub issue/PR sweeper using Claude - scans issues and PRs and suggests what can be closed",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "plan": "node dist/hermessweeper.js plan",
+    "review": "node dist/hermessweeper.js review",
+    "apply-artifacts": "node dist/hermessweeper.js apply-artifacts",
+    "apply-decisions": "node dist/hermessweeper.js apply-decisions",
+    "reconcile": "node dist/hermessweeper.js reconcile",
+    "dashboard": "node dist/hermessweeper.js dashboard",
+    "status": "node dist/hermessweeper.js status",
+    "check": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
