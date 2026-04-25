@@ -166,6 +166,18 @@ _Dashboard will be populated after the first review run._
 
 See the "How It Works" section above.
 
+## Credits
+
+Forked and recoded from [openclaw/clawsweeper](https://github.com/openclaw/clawsweeper) — the original ClawSweeper bot built for the OpenClaw project. Original work by [@steipete](https://github.com/steipete) and contributors.
+
+Key changes from the original:
+- Replaced OpenAI Codex (GPT-5.4) with Anthropic Claude API
+- Made target repository fully configurable (any GitHub repo)
+- Generalized close reasons (`clawhub` → `out_of_scope`)
+- Added `hermessweeper.config.json` support
+- Pure text analysis approach (no sandbox/code execution needed)
+- Lowered requirements to Node >=20 and standard TypeScript 5.x
+
 ## License
 
 MIT
