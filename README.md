@@ -1,10 +1,11 @@
 # HermesSweeper
 
-AI-powered GitHub issue/PR sweeper using Claude — scans open issues and PRs, analyzes them with Anthropic's Claude API, and suggests (or applies) closures for items that are already resolved, out of scope, stale, or not actionable.
+AI-powered GitHub issue/PR sweeper using any OpenRouter model (minimax, Claude, GPT, and 100+ LLMs) — scans open issues and PRs, analyzes them, and suggests (or applies) closures for items that are already resolved, out of scope, stale, or not actionable.
 
 ## Features
 
-- **Pure text analysis** — gathers all issue/PR context via GitHub API, sends it to Claude for review. No code execution sandbox needed.
+- **Any model via OpenRouter** — uses OpenRouter's unified API, supports minimax, Claude, GPT, Gemini, and 100+ models
+- **Pure text analysis** — gathers all issue/PR context via GitHub API, sends it to the LLM for review. No code execution sandbox needed.
 - **Conservative by default** — only proposes closures when confidence is high. Keeps items open when uncertain.
 - **Configurable** — works with any GitHub repository. Target repo, model, tokens, and behavior are all configurable.
 - **Sharded review** — supports splitting work across parallel shards for large repos.
@@ -37,7 +38,7 @@ Required environment variables:
 
 | Variable | Description |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Your Anthropic API key for Claude access |
+| `OPENROUTER_API_KEY` | Your OpenRouter API key (supports minimax, Claude, GPT, and 100+ models) |
 | `GITHUB_TOKEN` | GitHub personal access token (used by `gh` CLI) |
 | `TARGET_REPO` | Target repository in `owner/repo` format |
 | `REPORT_REPO` | (Optional) Repository where sweep reports are stored |
@@ -50,7 +51,7 @@ Create `hermessweeper.config.json` in the project root:
 {
   "targetRepo": "owner/repo",
   "reportRepo": "owner/sweeper-repo",
-  "model": "claude-sonnet-4-20250514",
+  "model": "minimax/minimax-m2.7",
   "maxTokens": 4096,
   "freshDays": 7,
   "staleDays": 60
@@ -94,9 +95,9 @@ Review-specific arguments:
 
 | Argument | Description | Default |
 | --- | --- | --- |
-| `--model name` | Claude model to use | `claude-sonnet-4-20250514` |
-| `--max-tokens n` | Max tokens for Claude response | `4096` |
-| `--timeout-ms n` | Timeout for Claude API call | `120000` |
+| `--model name` | OpenRouter model to use (e.g. `minimax/minimax-m2.7`) | `minimax/minimax-m2.7` |
+| `--max-tokens n` | Max tokens for LLM response | `4096` |
+| `--timeout-ms n` | Timeout for OpenRouter API call | `120000` |
 | `--batch-size n` | Items to review per shard | `5` |
 | `--shard-index n` | Current shard index | `0` |
 | `--shard-count n` | Total number of shards | `1` |
@@ -111,8 +112,8 @@ Review-specific arguments:
 2. **Review**: For each candidate item:
    - Fetches full context: issue body, comments, timeline events, PR details/files/commits
    - Constructs a detailed prompt with all context
-   - Sends to Claude API for analysis
-   - Claude returns a structured JSON decision: close (with reason) or keep open
+   - Sends to OpenRouter LLM for analysis
+   - LLM returns a structured JSON decision: close (with reason) or keep open
    - Decision is saved as a markdown report
 
 3. **Apply**: Reviews proposed closures, verifies the item hasn't changed since review, posts a close comment, and closes the issue/PR on GitHub.
@@ -148,8 +149,8 @@ Full sweep workflow:
 
 ```bash
 export TARGET_REPO=octocat/hello-world
-export ANTHROPIC_API_KEY=sk-ant-...
-export GITHUB_TOKEN=ghp_...
+export OPENROUTER_API_KEY=***
+export GITHUB_TOKEN=***
 
 npm run build
 npm run plan -- --batch-size 10 --shard-count 1
@@ -171,7 +172,8 @@ See the "How It Works" section above.
 Forked and recoded from [openclaw/clawsweeper](https://github.com/openclaw/clawsweeper) — the original ClawSweeper bot built for the OpenClaw project. Original work by [@steipete](https://github.com/steipete) and contributors.
 
 Key changes from the original:
-- Replaced OpenAI Codex (GPT-5.4) with Anthropic Claude API
+- Replaced OpenAI Codex (GPT-5.4) with OpenRouter API (supports minimax, Claude, GPT, and 100+ LLMs)
+- Switched default model from Codex to minimax/m2.7 for cost efficiency (~$0.0015/review)
 - Made target repository fully configurable (any GitHub repo)
 - Generalized close reasons (`clawhub` → `out_of_scope`)
 - Added `hermessweeper.config.json` support

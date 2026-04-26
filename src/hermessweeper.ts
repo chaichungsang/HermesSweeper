@@ -266,7 +266,7 @@ function getReportRepo(args: Args): string {
   return resolveConfig(cli, "REPORT_REPO", CONFIG.reportRepo, "");
 }
 
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+const DEFAULT_MODEL = "minimax/minimax-m2.7";
 const DEFAULT_MAX_TOKENS = 4096;
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_FRESH_DAYS = 7;
@@ -1057,16 +1057,16 @@ function trimMiddle(text: string, maxLength: number): string {
 function claudeFailureDecision(detail: string): Decision {
   const reason = detail.includes("timed out") || detail.includes("ETIMEDOUT")
     ? "timeout"
-    : detail.includes("invalid JSON") || detail.includes("Failed to parse")
-      ? "invalid structured output"
-      : detail.includes("ANTHROPIC_API_KEY")
-        ? "missing API key"
-        : "Claude API call failed";
+      : detail.includes("invalid JSON") || detail.includes("Failed to parse")
+        ? "invalid structured output"
+        : detail.includes("OPENROUTER_API_KEY")
+          ? "missing API key"
+          : "OpenRouter API call failed";
   return {
     decision: "keep_open",
     closeReason: "none",
     confidence: "low",
-    summary: `Claude review failed: ${reason}.`,
+    summary: `HermesSweeper review failed: ${reason}.`,
     evidence: [
       { label: "failure reason", detail: reason },
       { label: "failure detail", detail: trimMiddle(detail, 4000) },
@@ -1089,9 +1089,9 @@ function runClaude(options: {
 }): Decision {
   ensureDir(options.workDir);
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return claudeFailureDecision("ANTHROPIC_API_KEY environment variable is not set.");
+    return claudeFailureDecision("OPENROUTER_API_KEY environment variable is not set.");
   }
 
   const schema = readFileSync(
@@ -1112,15 +1112,14 @@ ${schema}
 
 Do not include any text before or after the JSON. Your entire response must be the JSON object.`;
 
+  // OpenRouter uses OpenAI-compatible chat completions format
+  // System prompt goes as a dedicated system message
   const requestBody = JSON.stringify({
     model: options.model,
     max_tokens: options.maxTokens,
-    system: systemPrompt,
     messages: [
-      {
-        role: "user",
-        content: userPrompt,
-      },
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
     ],
   });
 
@@ -1140,13 +1139,15 @@ Do not include any text before or after the JSON. Your entire response must be t
         String(timeoutSeconds),
         "-X",
         "POST",
-        "https://api.anthropic.com/v1/messages",
+        "https://openrouter.ai/api/v1/chat/completions",
         "-H",
         "Content-Type: application/json",
         "-H",
-        `x-api-key: ${apiKey}`,
+        `Authorization: Bearer ${apiKey}`,
         "-H",
-        "anthropic-version: 2023-06-01",
+        "HTTP-Referer: https://github.com/chaichungsang/HermesSweeper",
+        "-H",
+        "X-Title: HermesSweeper",
         "-d",
         `@${requestPath}`,
       ],
@@ -1170,33 +1171,28 @@ Do not include any text before or after the JSON. Your entire response must be t
   try {
     response = JSON.parse(stdout) as Record<string, unknown>;
   } catch {
-    return claudeFailureDecision(`Failed to parse Claude API response as JSON: ${trimMiddle(stdout, 2000)}`);
+    return claudeFailureDecision(`Failed to parse OpenRouter API response as JSON: ${trimMiddle(stdout, 2000)}`);
   }
 
-  // Check for API errors
-  if (response.type === "error") {
+  // Check for API errors (OpenRouter error format)
+  if (response.error) {
     const errorObj = asRecord(response.error);
     return claudeFailureDecision(
-      `Claude API error: ${errorObj.type ?? "unknown"} - ${errorObj.message ?? JSON.stringify(response)}`,
+      `OpenRouter API error: ${errorObj.code ?? "unknown"} - ${errorObj.message ?? JSON.stringify(response)}`,
     );
   }
 
-  // Extract text content from the response
-  const content = response.content;
-  if (!Array.isArray(content) || content.length === 0) {
-    return claudeFailureDecision(`Claude API returned no content: ${JSON.stringify(response).slice(0, 2000)}`);
+  // Extract text content from OpenRouter's OpenAI-compatible response
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const choices = response.choices as any[];
+  if (!Array.isArray(choices) || choices.length === 0) {
+    return claudeFailureDecision(`OpenRouter API returned no choices: ${JSON.stringify(response).slice(0, 2000)}`);
   }
 
-  const textBlock = content.find(
-    (block: unknown) => asRecord(block).type === "text",
-  );
-  if (!textBlock) {
-    return claudeFailureDecision(`Claude API returned no text content block.`);
-  }
-
-  const text = String(asRecord(textBlock).text ?? "").trim();
+  const message = choices[0]?.message;
+  const text = String(message?.content ?? "").trim();
   if (!text) {
-    return claudeFailureDecision(`Claude API returned empty text content.`);
+    return claudeFailureDecision(`OpenRouter API returned empty content: ${JSON.stringify(response).slice(0, 2000)}`);
   }
 
   // Parse the JSON decision from Claude's response
@@ -1212,7 +1208,7 @@ Do not include any text before or after the JSON. Your entire response must be t
     decision = JSON.parse(jsonText) as Decision;
   } catch {
     return claudeFailureDecision(
-      `Failed to parse Claude response as valid JSON decision: ${trimMiddle(text, 2000)}`,
+      `Failed to parse HermesSweeper response as valid JSON decision: ${trimMiddle(text, 2000)}`,
     );
   }
 
