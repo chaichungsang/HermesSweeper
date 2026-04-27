@@ -1,0 +1,3 @@
+[submodule "third_party/hf-skills"]
+	path = third_party/hf-skills
+	url = https://github.com/chaichungsang/hf-skills.git
