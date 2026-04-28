@@ -1,3 +1,5 @@
+> Forked and recoded from [openclaw/clawsweeper](https://github.com/openclaw/clawsweeper) — the original ClawSweeper bot built for the OpenClaw project. Original work by [@steipete](https://github.com/steipete) and contributors.
+
 # HermesSweeper
 
 AI-powered GitHub issue/PR sweeper using any OpenRouter model (minimax, Claude, GPT, and 100+ LLMs) — scans open issues and PRs, analyzes them, and suggests (or applies) closures for items that are already resolved, out of scope, stale, or not actionable.
